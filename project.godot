@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Deadzone"
-run/main_scene="uid://brsjl223s2anp"
+run/main_scene="uid://bvn1mo5wlq2oe"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
