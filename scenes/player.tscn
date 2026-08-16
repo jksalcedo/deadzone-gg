@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://c1spj43apeigf"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_16hcq"]
+top_radius = 0.1
+bottom_radius = 0.05
+height = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jcmh0"]
+albedo_color = Color(1, 0, 0, 1)
+roughness = 0.0
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_16hcq"]
+material = SubResource("StandardMaterial3D_jcmh0")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_u8vuu"]
+
+[node name="Player" type="CharacterBody3D" unique_id=329179934]
+
+[node name="Eyes" type="Node3D" parent="." unique_id=1280092906]
+
+[node name="Eye1" type="MeshInstance3D" parent="Eyes" unique_id=1661553201]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0.152, 1.497, -0.4)
+mesh = SubResource("CylinderMesh_16hcq")
+
+[node name="Eye2" type="MeshInstance3D" parent="Eyes" unique_id=462192445]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, -0.152, 1.497, -0.4)
+mesh = SubResource("CylinderMesh_16hcq")
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=101636453]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+mesh = SubResource("CapsuleMesh_16hcq")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1661885551]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_u8vuu")
