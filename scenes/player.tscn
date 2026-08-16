@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://c1spj43apeigf"]
 
 [ext_resource type="Script" uid="uid://chf4cfhn4v5jp" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="PackedScene" uid="uid://dg3hfqbmogv1u" path="res://scenes/weapons/dr-h.scn" id="2_g2els"]
+[ext_resource type="PackedScene" uid="uid://c8dll5a1cq8sl" path="res://scenes/weapons/pistol.scn" id="3_qhqgy"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_16hcq"]
 top_radius = 0.1
@@ -46,6 +48,9 @@ camera = NodePath("CameraPivot/SpringArm3D/Camera3D")
 body_mesh = NodePath("Body")
 eyes_node = NodePath("Eyes")
 
+[node name="WeaponPosition" type="Marker3D" parent="." unique_id=984319985]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1.0000001, 0.34598958, 1.233859, -0.759432)
+
 [node name="Eyes" type="Node3D" parent="." unique_id=1280092906]
 
 [node name="Eye1" type="MeshInstance3D" parent="Eyes" unique_id=1661553201]
@@ -72,6 +77,15 @@ spring_length = 0.0
 margin = 0.1
 
 [node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D" unique_id=2000000003]
+fov = 80.0
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=2000000004]
 replication_config = SubResource("SceneReplicationConfig_player")
+
+[node name="ICR-1" parent="." unique_id=435542855 instance=ExtResource("2_g2els")]
+transform = Transform3D(100.00001, 0, 0, 0, 100.00001, 0, 0, 0, 100.000015, 0.34598958, 1.233859, -0.759432)
+visible = false
+
+[node name="Pistol" parent="." unique_id=354971286 instance=ExtResource("3_qhqgy")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3801177, 1.2570437, -0.763077)
+visible = false
