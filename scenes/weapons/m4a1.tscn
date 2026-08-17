@@ -55,3 +55,4 @@ transform = Transform3D(4.7767137e-16, -1.0927847e-08, -0.25, -0.25, -1.0927847e
 mesh = SubResource("ArrayMesh_423rp")
 
 [node name="Player" parent="." unique_id=329179934 instance=ExtResource("2_m72ta")]
+visible = false
