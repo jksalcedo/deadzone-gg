@@ -3,6 +3,8 @@ extends Node3D
 
 signal fired
 signal reloaded
+signal reload_started(duration: float)
+signal reload_canceled
 signal ammo_changed(current: int, reserve: int)
 
 @export_group("Weapon Stats")
@@ -58,6 +60,7 @@ func reload() -> void:
 		return
 
 	is_reloading = true
+	reload_started.emit(reload_time)
 	_reload_timer = get_tree().create_timer(reload_time)
 	_reload_timer.timeout.connect(_on_reload_complete)
 
@@ -74,4 +77,6 @@ func _on_reload_complete() -> void:
 	reloaded.emit()
 
 func cancel_reload() -> void:
-	is_reloading = false
+	if is_reloading:
+		is_reloading = false
+		reload_canceled.emit()

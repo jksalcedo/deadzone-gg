@@ -1,0 +1,244 @@
+[gd_scene format=3 uid="uid://cx6i8vujh4n1t"]
+
+[ext_resource type="Script" uid="uid://cefcw8c0i143x" path="res://scripts/hud.gd" id="1_hud"]
+[ext_resource type="Script" uid="uid://be587ejq7kocy" path="res://scripts/crosshair.gd" id="2_crosshair"]
+
+[sub_resource type="Gradient" id="Gradient_vignette"]
+offsets = PackedFloat32Array(0.4, 1)
+colors = PackedColorArray(0.6, 0, 0, 0, 0.7, 0.03, 0.03, 0.75)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_vignette"]
+gradient = SubResource("Gradient_vignette")
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(1, 1, 1, 0.08)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_damage_fill"]
+bg_color = Color(0.85, 0.2, 0.15, 0.7)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_health_fill"]
+bg_color = Color(0.95, 0.95, 0.95, 0.9)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reload_bg"]
+bg_color = Color(1, 1, 1, 0.1)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_reload_fill"]
+bg_color = Color(0.95, 0.95, 0.95, 0.8)
+corner_radius_top_left = 1
+corner_radius_top_right = 1
+corner_radius_bottom_right = 1
+corner_radius_bottom_left = 1
+
+[node name="HUD" type="CanvasLayer" node_paths=PackedStringArray("health_bar", "health_delay_bar", "health_label", "damage_vignette", "hitmarker", "crosshair", "weapon_name_label", "current_ammo_label", "reserve_ammo_label", "reload_container", "reload_progress_bar", "low_ammo_label")]
+script = ExtResource("1_hud")
+health_bar = NodePath("BottomLeft/HealthBar")
+health_delay_bar = NodePath("BottomLeft/HealthDelayBar")
+health_label = NodePath("BottomLeft/HealthLabel")
+damage_vignette = NodePath("DamageVignette")
+hitmarker = NodePath("Crosshair/Hitmarker")
+crosshair = NodePath("Crosshair")
+weapon_name_label = NodePath("BottomRight/WeaponNameLabel")
+current_ammo_label = NodePath("BottomRight/AmmoRow/CurrentAmmoLabel")
+reserve_ammo_label = NodePath("BottomRight/AmmoRow/Slash/ReserveAmmoLabel")
+reload_container = NodePath("ReloadCenter")
+reload_progress_bar = NodePath("ReloadCenter/ReloadProgressBar")
+low_ammo_label = NodePath("BottomRight/LowAmmoLabel")
+
+[node name="DamageVignette" type="TextureRect" parent="."]
+modulate = Color(1, 1, 1, 0)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = SubResource("GradientTexture2D_vignette")
+expand_mode = 1
+
+[node name="Crosshair" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_crosshair")
+base_gap = 10.0
+
+[node name="Hitmarker" type="Control" parent="Crosshair"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BottomLeft" type="Control" parent="."]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = -62.0
+offset_right = 228.0
+offset_bottom = -28.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="HealthLabel" type="Label" parent="BottomLeft"]
+layout_mode = 1
+anchors_preset = 0
+offset_top = -2.0
+offset_right = 200.0
+offset_bottom = 22.0
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 0.9)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 2
+text = "100"
+
+[node name="HealthDelayBar" type="ProgressBar" parent="BottomLeft"]
+layout_mode = 1
+offset_top = 24.0
+offset_right = 200.0
+offset_bottom = 30.0
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_damage_fill")
+value = 100.0
+show_percentage = false
+
+[node name="HealthBar" type="ProgressBar" parent="BottomLeft"]
+layout_mode = 1
+offset_top = 24.0
+offset_right = 200.0
+offset_bottom = 30.0
+theme_override_styles/background = SubResource("StyleBoxEmpty_1")
+theme_override_styles/fill = SubResource("StyleBoxFlat_health_fill")
+value = 100.0
+show_percentage = false
+
+[node name="BottomRight" type="Control" parent="."]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -198.0
+offset_top = -80.0
+offset_right = -28.0
+offset_bottom = -28.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="WeaponNameLabel" type="Label" parent="BottomRight"]
+layout_mode = 1
+anchors_preset = 0
+offset_right = 170.0
+offset_bottom = 16.0
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 0.55)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.4)
+theme_override_constants/outline_size = 1
+text = "DR-H"
+horizontal_alignment = 2
+
+[node name="AmmoRow" type="HBoxContainer" parent="BottomRight"]
+layout_mode = 1
+offset_top = 16.0
+offset_right = 170.0
+offset_bottom = 52.0
+alignment = 2
+theme_override_constants/separation = 0
+
+[node name="CurrentAmmoLabel" type="Label" parent="BottomRight/AmmoRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+theme_override_colors/font_color = Color(0.95, 0.95, 0.95, 0.95)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.5)
+theme_override_constants/outline_size = 2
+text = "30"
+
+[node name="Slash" type="HBoxContainer" parent="BottomRight/AmmoRow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="SlashLabel" type="Label" parent="BottomRight/AmmoRow/Slash"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 0.4)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.3)
+theme_override_constants/outline_size = 1
+text = " / "
+vertical_alignment = 2
+
+[node name="ReserveAmmoLabel" type="Label" parent="BottomRight/AmmoRow/Slash"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 0.5)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.3)
+theme_override_constants/outline_size = 1
+text = "120"
+vertical_alignment = 2
+
+[node name="LowAmmoLabel" type="Label" parent="BottomRight"]
+visible = false
+layout_mode = 1
+offset_top = 52.0
+offset_right = 170.0
+offset_bottom = 64.0
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.85, 0.3, 0.2, 0.8)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.4)
+theme_override_constants/outline_size = 1
+text = "RELOAD"
+horizontal_alignment = 2
+
+[node name="ReloadCenter" type="Control" parent="."]
+visible = false
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -100.0
+offset_right = 60.0
+offset_bottom = -96.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="ReloadProgressBar" type="ProgressBar" parent="ReloadCenter"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_reload_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_reload_fill")
+max_value = 1.0
+show_percentage = false
