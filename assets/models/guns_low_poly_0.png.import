@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://clu0gecus2o8l"
-path.s3tc="res://.godot/imported/guns_low_poly_0.png-1027e4340990fc123051b5cae6cbf25f.s3tc.ctex"
+path.s3tc="res://.godot/imported/guns_low_poly_0.png-4bba6619eaedf07b38b9358045163246.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
@@ -14,8 +14,8 @@ generator_parameters={
 
 [deps]
 
-source_file="res://models/guns_low_poly_0.png"
-dest_files=["res://.godot/imported/guns_low_poly_0.png-1027e4340990fc123051b5cae6cbf25f.s3tc.ctex"]
+source_file="res://assets/models/guns_low_poly_0.png"
+dest_files=["res://.godot/imported/guns_low_poly_0.png-4bba6619eaedf07b38b9358045163246.s3tc.ctex"]
 
 [params]
 

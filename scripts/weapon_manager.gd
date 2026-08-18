@@ -111,6 +111,9 @@ func _perform_raycast(camera: Camera3D, weapon: Weapon) -> void:
 		query.exclude = [_player.get_rid()]
 
 	var result = space_state.intersect_ray(query)
+	var target_pos: Vector3 = result.position if result else (ray_origin + ray_dir * weapon.max_range)
+	_spawn_visual_effects(weapon, target_pos)
+
 	if result:
 		var collider = result.collider
 		if collider and collider.has_method("take_damage"):
@@ -119,6 +122,21 @@ func _perform_raycast(camera: Camera3D, weapon: Weapon) -> void:
 			else:
 				var attacker_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 0
 				collider.take_damage(weapon.damage, attacker_id)
+
+func _spawn_visual_effects(weapon: Weapon, hit_point: Vector3) -> void:
+	if weapon.muzzle_flash_scene and weapon.muzzle_point:
+		var flash = weapon.muzzle_flash_scene.instantiate()
+		weapon.muzzle_point.add_child(flash)
+
+	if weapon.bullet_trail_scene:
+		var trail = weapon.bullet_trail_scene.instantiate()
+		var start_pos: Vector3 = weapon.muzzle_point.global_position if weapon.muzzle_point else global_position
+		get_tree().root.add_child(trail)
+		trail.global_position = start_pos
+		if start_pos.distance_squared_to(hit_point) > 0.001:
+			trail.look_at(hit_point, Vector3.UP)
+		if "max_distance" in trail:
+			trail.max_distance = start_pos.distance_to(hit_point)
 
 @rpc("any_peer", "call_local", "reliable")
 func server_apply_damage(target_path: NodePath, amount: float) -> void:

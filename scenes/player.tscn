@@ -3,9 +3,8 @@
 [ext_resource type="Script" uid="uid://chf4cfhn4v5jp" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://dg3hfqbmogv1u" path="res://scenes/weapons/dr-h.scn" id="2_g2els"]
 [ext_resource type="PackedScene" uid="uid://c8dll5a1cq8sl" path="res://scenes/weapons/pistol.scn" id="3_qhqgy"]
-[ext_resource type="Script" uid="uid://dan73uh71dd72" path="res://scripts/weapon.gd" id="4_weapon"]
 [ext_resource type="Script" uid="uid://be587ejq7kocy" path="res://scripts/crosshair.gd" id="5_crosshair"]
-[ext_resource type="Script" path="res://scripts/weapon_manager.gd" id="6_weapon_manager"]
+[ext_resource type="Script" uid="uid://d4capu2ob2ddg" path="res://scripts/weapon_manager.gd" id="6_weapon_manager"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_16hcq"]
 top_radius = 0.1
@@ -92,21 +91,14 @@ fov = 80.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34598958, -0.266141, -0.2134969)
 script = ExtResource("6_weapon_manager")
 
-[node name="ICR-1" parent="CameraPivot/WeaponHolder" unique_id=435542855 instance=ExtResource("2_g2els")]
-script = ExtResource("4_weapon")
-weapon_name = "ICR-1"
-damage = 30.0
+[node name="DR-H" parent="CameraPivot/WeaponHolder" unique_id=435542855 instance=ExtResource("2_g2els")]
 
 [node name="Pistol" parent="CameraPivot/WeaponHolder" unique_id=354971286 instance=ExtResource("3_qhqgy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.03412812, 0.0231847, -0.003645)
 visible = false
-script = ExtResource("4_weapon")
-weapon_name = "Pistol"
-damage = 22.0
-fire_rate = 0.2
-is_automatic = false
-mag_capacity = 12
-max_reserve_ammo = 48
+
+[node name="Marker3D" type="Marker3D" parent="CameraPivot/WeaponHolder" unique_id=1900290565]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22719228)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=2000000005]
 
