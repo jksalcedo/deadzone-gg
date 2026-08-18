@@ -1,25 +1,31 @@
 class_name Player
 extends CharacterBody3D
 
+signal health_changed(current: float, max: float)
+
 enum CameraMode {
 	FPS,
 	TPS
 }
 
 @export_group("Movement")
-@export var walk_speed: float = 5.0
-@export var sprint_speed: float = 8.0
-@export var jump_velocity: float = 4.5
+@export var walk_speed: float = 10.0
+@export var sprint_speed: float = 15.0
+@export var jump_velocity: float = 10.0
 @export var acceleration: float = 12.0
 @export var deceleration: float = 10.0
 
 @export_group("Camera")
 @export var mouse_sensitivity: float = 0.0025
-@export var default_camera_mode: CameraMode = CameraMode.FPS
-@export var tps_distance: float = 3.0
-@export var tps_offset: Vector3 = Vector3(0.4, 0.2, 0.0)
+@export var default_camera_mode: CameraMode = CameraMode.TPS
+@export var tps_distance: float = 3.5
+@export var tps_offset: Vector3 = Vector3(0.5, 0.5, 0.0)
 @export var min_pitch: float = -89.0
 @export var max_pitch: float = 89.0
+
+@export_group("Health")
+@export var max_health: float = 100.0
+var health: float = 100.0
 
 @export_group("Node References")
 @export var camera_pivot: Node3D
@@ -27,16 +33,22 @@ enum CameraMode {
 @export var camera: Camera3D
 @export var body_mesh: MeshInstance3D
 @export var eyes_node: Node3D
+@export var weapon_manager: WeaponManager
+@export var hud: CanvasLayer
+@export var crosshair: Crosshair
 
-var current_camera_mode: CameraMode = CameraMode.FPS
+var current_camera_mode: CameraMode = CameraMode.TPS
 var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
 # Multiplayer sync variables
 @export var sync_position: Vector3 = Vector3.ZERO
 @export var sync_rotation_y: float = 0.0
 @export var sync_pitch: float = 0.0
+@export var sync_weapon_index: int = 0
 
 func _ready() -> void:
+	health = max_health
+
 	if not camera_pivot:
 		camera_pivot = get_node_or_null("CameraPivot")
 	if not spring_arm and camera_pivot:
@@ -46,6 +58,14 @@ func _ready() -> void:
 			camera = spring_arm.get_node_or_null("Camera3D")
 		elif camera_pivot:
 			camera = camera_pivot.get_node_or_null("Camera3D")
+	if not weapon_manager:
+		if camera_pivot and camera_pivot.has_node("WeaponHolder"):
+			weapon_manager = camera_pivot.get_node("WeaponHolder") as WeaponManager
+		elif has_node("WeaponManager"):
+			weapon_manager = get_node("WeaponManager") as WeaponManager
+
+	if weapon_manager:
+		weapon_manager.recoil_requested.connect(_on_recoil_requested)
 
 	if spring_arm:
 		spring_arm.add_excluded_object(get_rid())
@@ -53,6 +73,8 @@ func _ready() -> void:
 	if not _is_local_authority():
 		if camera:
 			camera.current = false
+		if hud:
+			hud.visible = false
 		set_process_unhandled_input(false)
 		return
 
@@ -79,17 +101,39 @@ func _unhandled_input(event: InputEvent) -> void:
 				deg_to_rad(max_pitch)
 			)
 
+	# Firing & Weapon cycling input
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and event.pressed:
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			else:
+				if weapon_manager:
+					weapon_manager.is_firing_held = event.pressed
+					if event.pressed:
+						weapon_manager.try_fire(camera, crosshair)
+		elif event.pressed and weapon_manager:
+			if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+				weapon_manager.cycle_weapon(-1)
+			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+				weapon_manager.cycle_weapon(1)
+
+	# Weapon selection numbers & Reload
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode >= KEY_1 and event.keycode <= KEY_9 and weapon_manager:
+			weapon_manager.set_active_weapon(event.keycode - KEY_1)
+		elif (event.keycode == KEY_R or event.is_action_pressed("reload")) and weapon_manager:
+			weapon_manager.reload_active()
+
+	# Perspective toggle
 	if event.is_action_pressed("toggle_perspective") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_V):
 		toggle_camera_mode()
 
+	# Mouse release
 	if event.is_action_pressed("ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-	if event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_VISIBLE:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _physics_process(delta: float) -> void:
 	if not _is_local_authority():
@@ -98,7 +142,13 @@ func _physics_process(delta: float) -> void:
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, delta * 15.0)
 		if camera_pivot:
 			camera_pivot.rotation.x = lerp_angle(camera_pivot.rotation.x, sync_pitch, delta * 15.0)
+		if weapon_manager and sync_weapon_index != weapon_manager.active_weapon_index:
+			weapon_manager.set_active_weapon(sync_weapon_index)
 		return
+
+	# Continuous automatic firing
+	if weapon_manager:
+		weapon_manager.process_firing(camera, crosshair)
 
 	# Gravity
 	if not is_on_floor():
@@ -119,6 +169,8 @@ func _physics_process(delta: float) -> void:
 	if direction:
 		velocity.x = lerp(velocity.x, direction.x * target_speed, acceleration * delta)
 		velocity.z = lerp(velocity.z, direction.z * target_speed, acceleration * delta)
+		if crosshair:
+			crosshair.add_spread(0.1)
 	else:
 		velocity.x = lerp(velocity.x, 0.0, deceleration * delta)
 		velocity.z = lerp(velocity.z, 0.0, deceleration * delta)
@@ -128,6 +180,8 @@ func _physics_process(delta: float) -> void:
 	# Update sync properties for MultiplayerSynchronizer
 	sync_position = global_position
 	sync_rotation_y = rotation.y
+	if weapon_manager:
+		sync_weapon_index = weapon_manager.active_weapon_index
 	if camera_pivot:
 		sync_pitch = camera_pivot.rotation.x
 
@@ -142,6 +196,29 @@ func _get_movement_vector() -> Vector2:
 	if Input.is_action_pressed("move_back") or Input.is_key_pressed(KEY_S):
 		dir.y += 1.0
 	return dir.normalized()
+
+func _on_recoil_requested(pitch_kick: float) -> void:
+	if camera_pivot:
+		camera_pivot.rotation.x = clamp(
+			camera_pivot.rotation.x + pitch_kick,
+			deg_to_rad(min_pitch),
+			deg_to_rad(max_pitch)
+		)
+
+func take_damage(amount: float, attacker_id: int = 0) -> void:
+	health = maxf(0.0, health - amount)
+	health_changed.emit(health, max_health)
+	if health <= 0.0:
+		_on_death(attacker_id)
+
+func _on_death(attacker_id: int = 0) -> void:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var spawner = get_tree().root.find_child("PlayerSpawner", true, false)
+		if spawner and spawner.has_method("respawn_player"):
+			spawner.respawn_player(get_multiplayer_authority())
+	else:
+		health = max_health
+		health_changed.emit(health, max_health)
 
 func toggle_camera_mode() -> void:
 	if current_camera_mode == CameraMode.FPS:
