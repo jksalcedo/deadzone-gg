@@ -1,6 +1,6 @@
 [gd_scene format=4 uid="uid://d11b8xwcgi2is"]
 
-[ext_resource type="Texture2D" uid="uid://clu0gecus2o8l" path="res://models/guns_low_poly_0.png" id="1_cnl5w"]
+[ext_resource type="Texture2D" uid="uid://clu0gecus2o8l" path="res://assets/models/guns_low_poly_0.png" id="1_cnl5w"]
 [ext_resource type="PackedScene" uid="uid://c1spj43apeigf" path="res://scenes/player.tscn" id="2_f7fjf"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3kfha"]

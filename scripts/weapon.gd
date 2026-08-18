@@ -17,8 +17,12 @@ signal ammo_changed(current: int, reserve: int)
 @export var spread: float = 0.01
 @export var recoil_kick: float = 0.015
 
+@export_group("Visual Effects")
+@export var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/muzzle_flash.tscn")
+@export var bullet_trail_scene: PackedScene = preload("res://scenes/effects/bullet_trail.tscn")
+
 @export_group("Nodes")
-@export var muzzle_point: Node3D
+@export var muzzle_point: Marker3D
 
 var current_ammo: int = 30
 var reserve_ammo: int = 120

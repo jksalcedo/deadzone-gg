@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://lps7l2uhjt48"
-path="res://.godot/imported/lowpoly__map__asset__by_resoforge.glb-5a974ba56d77a7145e0f2083420538c4.scn"
+uid="uid://byd88d7b165qg"
+path="res://.godot/imported/guns_low_poly.glb-4642d1a6c0587dc85c7b430bd6b8cba1.scn"
 
 [deps]
 
-source_file="res://models/lowpoly__map__asset__by_resoforge.glb"
-dest_files=["res://.godot/imported/lowpoly__map__asset__by_resoforge.glb-5a974ba56d77a7145e0f2083420538c4.scn"]
+source_file="res://assets/models/guns_low_poly.glb"
+dest_files=["res://.godot/imported/guns_low_poly.glb-4642d1a6c0587dc85c7b430bd6b8cba1.scn"]
 
 [params]
 
