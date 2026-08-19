@@ -2,6 +2,7 @@ class_name Player
 extends CharacterBody3D
 
 signal health_changed(current: float, max: float)
+signal camera_mode_changed(mode: CameraMode)
 
 enum CameraMode {
 	FPS,
@@ -64,8 +65,16 @@ func _ready() -> void:
 		elif has_node("WeaponManager"):
 			weapon_manager = get_node("WeaponManager") as WeaponManager
 
+	if not hud:
+		hud = get_node_or_null("HUD")
+	if not crosshair and hud:
+		crosshair = hud.get_node_or_null("Crosshair")
+
 	if weapon_manager:
 		weapon_manager.recoil_requested.connect(_on_recoil_requested)
+
+	if hud and hud.has_method("initialize"):
+		hud.initialize(self, weapon_manager)
 
 	if spring_arm:
 		spring_arm.add_excluded_object(get_rid())
@@ -228,6 +237,7 @@ func toggle_camera_mode() -> void:
 
 func set_camera_mode(mode: CameraMode) -> void:
 	current_camera_mode = mode
+	camera_mode_changed.emit(current_camera_mode)
 	if not spring_arm:
 		return
 

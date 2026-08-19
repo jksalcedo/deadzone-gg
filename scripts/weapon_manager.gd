@@ -4,8 +4,12 @@ extends Node3D
 signal weapon_switched(weapon: Weapon)
 signal weapon_fired(weapon: Weapon)
 signal weapon_reloaded(weapon: Weapon)
+signal weapon_reload_started(weapon: Weapon, duration: float)
+signal weapon_reload_finished(weapon: Weapon)
+signal weapon_reload_canceled(weapon: Weapon)
 signal ammo_changed(current: int, reserve: int)
 signal recoil_requested(pitch_kick: float)
+signal hit_target(collider: Object, damage: float)
 
 @export var weapons: Array[Weapon] = []
 @export var active_weapon_index: int = 0
@@ -16,6 +20,8 @@ var _player: CharacterBody3D
 func _ready() -> void:
 	_player = _find_parent_character()
 	_collect_child_weapons()
+	for w in weapons:
+		_connect_weapon_signals(w)
 	if not weapons.is_empty():
 		set_active_weapon(0)
 
@@ -33,6 +39,35 @@ func _collect_child_weapons() -> void:
 	for child in get_children():
 		if child is Weapon:
 			weapons.append(child)
+
+func _connect_weapon_signals(w: Weapon) -> void:
+	if not w:
+		return
+	if not w.ammo_changed.is_connected(_on_weapon_ammo_changed.bind(w)):
+		w.ammo_changed.connect(_on_weapon_ammo_changed.bind(w))
+	if not w.reload_started.is_connected(_on_weapon_reload_started.bind(w)):
+		w.reload_started.connect(_on_weapon_reload_started.bind(w))
+	if not w.reloaded.is_connected(_on_weapon_reloaded.bind(w)):
+		w.reloaded.connect(_on_weapon_reloaded.bind(w))
+	if not w.reload_canceled.is_connected(_on_weapon_reload_canceled.bind(w)):
+		w.reload_canceled.connect(_on_weapon_reload_canceled.bind(w))
+
+func _on_weapon_ammo_changed(c: int, r: int, w: Weapon) -> void:
+	if get_active_weapon() == w:
+		ammo_changed.emit(c, r)
+
+func _on_weapon_reload_started(duration: float, w: Weapon) -> void:
+	if get_active_weapon() == w:
+		weapon_reload_started.emit(w, duration)
+
+func _on_weapon_reloaded(w: Weapon) -> void:
+	if get_active_weapon() == w:
+		weapon_reloaded.emit(w)
+		weapon_reload_finished.emit(w)
+
+func _on_weapon_reload_canceled(w: Weapon) -> void:
+	if get_active_weapon() == w:
+		weapon_reload_canceled.emit(w)
 
 func get_active_weapon() -> Weapon:
 	if weapons.is_empty() or active_weapon_index < 0 or active_weapon_index >= weapons.size():
@@ -117,6 +152,7 @@ func _perform_raycast(camera: Camera3D, weapon: Weapon) -> void:
 	if result:
 		var collider = result.collider
 		if collider and collider.has_method("take_damage"):
+			hit_target.emit(collider, weapon.damage)
 			if multiplayer.has_multiplayer_peer():
 				rpc_id(1, "server_apply_damage", collider.get_path(), weapon.damage)
 			else:

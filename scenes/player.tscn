@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://chf4cfhn4v5jp" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://dg3hfqbmogv1u" path="res://scenes/weapons/dr-h.scn" id="2_g2els"]
 [ext_resource type="PackedScene" uid="uid://c8dll5a1cq8sl" path="res://scenes/weapons/pistol.scn" id="3_qhqgy"]
-[ext_resource type="Script" uid="uid://be587ejq7kocy" path="res://scripts/crosshair.gd" id="5_crosshair"]
+[ext_resource type="PackedScene" uid="uid://cx6i8vujh4n1t" path="res://scenes/hud.tscn" id="5_hud"]
 [ext_resource type="Script" uid="uid://d4capu2ob2ddg" path="res://scripts/weapon_manager.gd" id="6_weapon_manager"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_16hcq"]
@@ -100,18 +100,7 @@ visible = false
 [node name="Marker3D" type="Marker3D" parent="CameraPivot/WeaponHolder" unique_id=1900290565]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22719228)
 
-[node name="HUD" type="CanvasLayer" parent="." unique_id=2000000005]
-
-[node name="Crosshair" type="Control" parent="HUD" unique_id=2000000006]
-layout_mode = 3
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("5_crosshair")
-base_gap = 10.0
+[node name="HUD" parent="." unique_id=2000000005 instance=ExtResource("5_hud")]
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="." unique_id=2000000004]
 replication_config = SubResource("SceneReplicationConfig_player")
