@@ -14,6 +14,7 @@ extends CanvasLayer
 @export var reload_container: Control
 @export var reload_progress_bar: ProgressBar
 @export var low_ammo_label: Label
+@export var bomb_count_label: Label
 
 var _player: Player
 var _weapon_manager: WeaponManager
@@ -44,7 +45,12 @@ func initialize(player: Player, weapon_mgr: WeaponManager) -> void:
 	if _player:
 		if not _player.health_changed.is_connected(_on_health_changed):
 			_player.health_changed.connect(_on_health_changed)
+		if _player.has_signal("bomb_count_changed"):
+			if not _player.bomb_count_changed.is_connected(_on_bomb_count_changed):
+				_player.bomb_count_changed.connect(_on_bomb_count_changed)
 		_on_health_changed(_player.health, _player.max_health)
+		if _player.has_method("get_bombs_remaining"):
+			_on_bomb_count_changed(_player.get_bombs_remaining(), _player.bomb_count)
 
 	if _weapon_manager:
 		if not _weapon_manager.weapon_switched.is_connected(_on_weapon_switched):
@@ -256,3 +262,11 @@ func _on_hitmarker_draw() -> void:
 	hitmarker.draw_line(center + Vector2(gap, -gap), center + Vector2(gap + len, -gap - len), hit_color, thick)
 	hitmarker.draw_line(center + Vector2(-gap, gap), center + Vector2(-gap - len, gap + len), hit_color, thick)
 	hitmarker.draw_line(center + Vector2(gap, gap), center + Vector2(gap + len, gap + len), hit_color, thick)
+
+func _on_bomb_count_changed(current: int, _max_count: int) -> void:
+	if bomb_count_label:
+		bomb_count_label.text = str(current)
+		if current <= 0:
+			bomb_count_label.modulate = Color(0.4, 0.4, 0.4, 0.5)
+		else:
+			bomb_count_label.modulate = Color(1.0, 1.0, 1.0, 1.0)

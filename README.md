@@ -21,3 +21,4 @@ A fast-paced LAN multiplayer shooter built with Godot 4, playable in third-perso
 
 - ["LOWPOLY | MAP | ASSET | by ResoForge"](https://skfb.ly/pxQxX) by ResoForge is licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 - "Guns Low poly" (https://skfb.ly/orzPw) by Satendra Saraswat is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+- "Low Poly Bomb (Shadeless)" (https://skfb.ly/6WMHv) by AlienDev is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).

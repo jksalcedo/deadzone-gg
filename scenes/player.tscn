@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://chf4cfhn4v5jp" path="res://scripts/player.gd" id="1_player"]
 [ext_resource type="PackedScene" uid="uid://dg3hfqbmogv1u" path="res://scenes/weapons/dr-h.scn" id="2_g2els"]
+[ext_resource type="PackedScene" uid="uid://cn0jxk48rugiy" path="res://scenes/weapons/bomb.scn" id="2_tuyoq"]
 [ext_resource type="PackedScene" uid="uid://c8dll5a1cq8sl" path="res://scenes/weapons/pistol.scn" id="3_qhqgy"]
 [ext_resource type="PackedScene" uid="uid://cx6i8vujh4n1t" path="res://scenes/hud.tscn" id="5_hud"]
 [ext_resource type="Script" uid="uid://d4capu2ob2ddg" path="res://scripts/weapon_manager.gd" id="6_weapon_manager"]
@@ -47,7 +48,7 @@ properties/6/path = NodePath(".:scale")
 properties/6/spawn = true
 properties/6/replication_mode = 1
 
-[node name="Player" type="CharacterBody3D" unique_id=329179934 node_paths=PackedStringArray("camera_pivot", "spring_arm", "camera", "body_mesh", "eyes_node", "weapon_manager", "hud", "crosshair")]
+[node name="Player" type="CharacterBody3D" unique_id=329179934 node_paths=PackedStringArray("camera_pivot", "spring_arm", "camera", "body_mesh", "eyes_node", "weapon_manager", "hud", "bomb_spawn_marker", "crosshair")]
 wall_min_slide_angle = 0.34906584
 script = ExtResource("1_player")
 jump_velocity = 10.0
@@ -61,6 +62,8 @@ body_mesh = NodePath("Body")
 eyes_node = NodePath("Eyes")
 weapon_manager = NodePath("CameraPivot/WeaponHolder")
 hud = NodePath("HUD")
+bomb_scene = ExtResource("2_tuyoq")
+bomb_spawn_marker = NodePath("CameraPivot/WeaponHolder/Marker3D")
 crosshair = NodePath("HUD/Crosshair")
 
 [node name="Eyes" type="Node3D" parent="." unique_id=1280092906]

@@ -3,6 +3,7 @@ extends CharacterBody3D
 
 signal health_changed(current: float, max: float)
 signal camera_mode_changed(mode: CameraMode)
+signal bomb_count_changed(current: int, max_count: int)
 
 enum CameraMode {
 	FPS,
@@ -66,6 +67,12 @@ var health: float = 100.0
 @export var eyes_node: Node3D
 @export var weapon_manager: WeaponManager
 @export var hud: CanvasLayer
+
+@export_group("Bomb")
+@export var bomb_scene: PackedScene
+@export var bomb_spawn_marker: Marker3D
+@export var bomb_count: int = 3
+@export var bomb_cooldown: float = 0.5
 @export var crosshair: Crosshair
 
 var current_camera_mode: CameraMode = CameraMode.TPS
@@ -76,6 +83,10 @@ var _was_on_floor: bool = true
 var _coyote_timer: float = 0.0
 var _jump_buffer_timer: float = 0.0
 var _fall_velocity: float = 0.0
+
+# Bomb state
+var _bombs_remaining: int = 0
+var _bomb_cooldown_timer: float = 0.0
 
 # Camera state
 var _bob_timer: float = 0.0
@@ -96,6 +107,8 @@ var _capsule_shape: CapsuleShape3D
 
 func _ready() -> void:
 	health = max_health
+	_bombs_remaining = bomb_count
+	bomb_count_changed.emit(_bombs_remaining, bomb_count)
 
 	if not camera_pivot:
 		camera_pivot = get_node_or_null("CameraPivot")
@@ -111,6 +124,14 @@ func _ready() -> void:
 			weapon_manager = camera_pivot.get_node("WeaponHolder") as WeaponManager
 		elif has_node("WeaponManager"):
 			weapon_manager = get_node("WeaponManager") as WeaponManager
+
+	if not bomb_spawn_marker:
+		if weapon_manager and weapon_manager.has_node("Marker3D"):
+			bomb_spawn_marker = weapon_manager.get_node("Marker3D") as Marker3D
+		elif has_node("CameraPivot/WeaponHolder/Marker3D"):
+			bomb_spawn_marker = get_node("CameraPivot/WeaponHolder/Marker3D") as Marker3D
+		else:
+			bomb_spawn_marker = find_child("Marker3D", true, false) as Marker3D
 
 	if not hud:
 		hud = get_node_or_null("HUD")
@@ -197,6 +218,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("jump") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE):
 		_jump_buffer_timer = jump_buffer_time
 
+	# Throw bomb
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_G:
+		_throw_bomb()
+
 	# Perspective toggle
 	if event.is_action_pressed("toggle_perspective") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_V):
 		toggle_camera_mode()
@@ -208,7 +233,59 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
+func _throw_bomb() -> void:
+	if not bomb_scene or _bombs_remaining <= 0 or _bomb_cooldown_timer > 0.0:
+		return
+	_bombs_remaining -= 1
+	_bomb_cooldown_timer = bomb_cooldown
+	bomb_count_changed.emit(_bombs_remaining, bomb_count)
+	
+	var origin: Vector3 = global_position + Vector3(0, 1.4, 0)
+	if bomb_spawn_marker:
+		origin = bomb_spawn_marker.global_position
+	elif weapon_manager and weapon_manager.has_node("Marker3D"):
+		origin = weapon_manager.get_node("Marker3D").global_position
+	elif camera_pivot:
+		origin = camera_pivot.global_position
+		
+	var direction: Vector3 = -global_transform.basis.z
+	if camera:
+		direction = -camera.global_transform.basis.z
+	elif camera_pivot:
+		direction = -camera_pivot.global_transform.basis.z
+		
+	var thrower_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 0
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			rpc("sync_spawn_bomb", origin, direction, thrower_id)
+		else:
+			rpc_id(1, "request_throw_bomb", origin, direction, thrower_id)
+	else:
+		_do_spawn_bomb(origin, direction, thrower_id)
+
+@rpc("any_peer", "call_local", "reliable")
+func request_throw_bomb(origin: Vector3, direction: Vector3, thrower_id: int) -> void:
+	if not multiplayer.is_server():
+		return
+	rpc("sync_spawn_bomb", origin, direction, thrower_id)
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_spawn_bomb(origin: Vector3, direction: Vector3, thrower_id: int) -> void:
+	_do_spawn_bomb(origin, direction, thrower_id)
+
+func _do_spawn_bomb(origin: Vector3, direction: Vector3, thrower_id: int) -> void:
+	if not bomb_scene:
+		return
+	var bomb = bomb_scene.instantiate()
+	get_tree().root.add_child(bomb)
+	bomb.throw_from(origin, direction, thrower_id)
+
+func get_bombs_remaining() -> int:
+	return _bombs_remaining
+
 func _physics_process(delta: float) -> void:
+	if _bomb_cooldown_timer > 0.0:
+		_bomb_cooldown_timer -= delta
 	if not _is_local_authority():
 		global_position = global_position.lerp(sync_position, delta * 15.0)
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, delta * 15.0)
@@ -477,6 +554,8 @@ func sync_respawn(spawn_transform: Transform3D) -> void:
 	sync_rotation_y = spawn_transform.basis.get_euler().y
 	health = max_health
 	health_changed.emit(health, max_health)
+	_bombs_remaining = bomb_count
+	bomb_count_changed.emit(_bombs_remaining, bomb_count)
 
 func _on_death(attacker_id: int = 0) -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -486,6 +565,8 @@ func _on_death(attacker_id: int = 0) -> void:
 	else:
 		health = max_health
 		health_changed.emit(health, max_health)
+		_bombs_remaining = bomb_count
+		bomb_count_changed.emit(_bombs_remaining, bomb_count)
 
 # --- Camera Mode ---
 
