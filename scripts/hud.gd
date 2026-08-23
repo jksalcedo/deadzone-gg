@@ -70,8 +70,11 @@ func _on_health_changed(current: float, max_val: float) -> void:
 		health_bar.max_value = max_val
 		if _health_tween:
 			_health_tween.kill()
-		_health_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		_health_tween.tween_property(health_bar, "value", current, 0.1)
+		if current >= max_val:
+			health_bar.value = current
+		else:
+			_health_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			_health_tween.tween_property(health_bar, "value", current, 0.1)
 
 	if health_delay_bar:
 		health_delay_bar.max_value = max_val
@@ -84,6 +87,8 @@ func _on_health_changed(current: float, max_val: float) -> void:
 			_damage_lag_tween.tween_property(health_delay_bar, "value", current, 0.5)
 			_trigger_damage_flash()
 		else:
+			if _damage_lag_tween:
+				_damage_lag_tween.kill()
 			health_delay_bar.value = current
 
 	if health_label:
@@ -92,7 +97,9 @@ func _on_health_changed(current: float, max_val: float) -> void:
 	var ratio = current / maxf(1.0, max_val)
 	_update_health_colors(ratio)
 
-	if ratio <= 0.25 and current > 0.0:
+	if ratio >= 1.0:
+		reset_effects()
+	elif ratio <= 0.25 and current > 0.0:
 		if not _is_low_health:
 			_is_low_health = true
 			_start_low_health_pulse()
@@ -100,8 +107,32 @@ func _on_health_changed(current: float, max_val: float) -> void:
 		_is_low_health = false
 		if _pulse_tween:
 			_pulse_tween.kill()
-		if damage_vignette and not _vignette_tween:
+			_pulse_tween = null
+		if _vignette_tween:
+			_vignette_tween.kill()
+			_vignette_tween = null
+		if damage_vignette:
 			damage_vignette.modulate.a = 0.0
+
+func reset_effects() -> void:
+	_is_low_health = false
+	if _vignette_tween:
+		_vignette_tween.kill()
+		_vignette_tween = null
+	if _pulse_tween:
+		_pulse_tween.kill()
+		_pulse_tween = null
+	if _damage_lag_tween:
+		_damage_lag_tween.kill()
+		_damage_lag_tween = null
+	if _hitmarker_tween:
+		_hitmarker_tween.kill()
+		_hitmarker_tween = null
+	_hitmarker_alpha = 0.0
+	if damage_vignette:
+		damage_vignette.modulate.a = 0.0
+	if hitmarker:
+		hitmarker.queue_redraw()
 
 func _update_health_colors(ratio: float) -> void:
 	if not health_bar:

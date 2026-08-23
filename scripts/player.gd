@@ -427,10 +427,56 @@ func _on_recoil_requested(pitch_kick: float) -> void:
 		)
 
 func take_damage(amount: float, attacker_id: int = 0) -> void:
-	health = maxf(0.0, health - amount)
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			health = maxf(0.0, health - amount)
+			rpc("sync_health", health)
+			if health <= 0.0:
+				_on_death(attacker_id)
+		else:
+			rpc_id(1, "request_take_damage", amount, attacker_id)
+	else:
+		health = maxf(0.0, health - amount)
+		health_changed.emit(health, max_health)
+		if health <= 0.0:
+			_on_death(attacker_id)
+
+@rpc("any_peer", "call_local", "reliable")
+func request_take_damage(amount: float, attacker_id: int = 0) -> void:
+	if not multiplayer.is_server():
+		return
+	take_damage(amount, attacker_id)
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_health(new_health: float) -> void:
+	health = new_health
 	health_changed.emit(health, max_health)
-	if health <= 0.0:
-		_on_death(attacker_id)
+
+func respawn(spawn_transform: Transform3D) -> void:
+	if multiplayer.has_multiplayer_peer():
+		if multiplayer.is_server():
+			rpc("sync_respawn", spawn_transform)
+		else:
+			rpc_id(1, "request_respawn")
+	else:
+		sync_respawn(spawn_transform)
+
+@rpc("any_peer", "call_local", "reliable")
+func request_respawn() -> void:
+	if not multiplayer.is_server():
+		return
+	var spawner = get_tree().root.find_child("PlayerSpawner", true, false)
+	if spawner and spawner.has_method("respawn_player"):
+		spawner.respawn_player(get_multiplayer_authority())
+
+@rpc("any_peer", "call_local", "reliable")
+func sync_respawn(spawn_transform: Transform3D) -> void:
+	global_transform = spawn_transform
+	velocity = Vector3.ZERO
+	sync_position = spawn_transform.origin
+	sync_rotation_y = spawn_transform.basis.get_euler().y
+	health = max_health
+	health_changed.emit(health, max_health)
 
 func _on_death(attacker_id: int = 0) -> void:
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():

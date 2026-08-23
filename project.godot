@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="Deadzone"
-run/main_scene="uid://bvn1mo5wlq2oe"
+run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
+
+[autoload]
+
+NetworkManager="*res://scripts/network_manager.gd"
 
 [display]
 

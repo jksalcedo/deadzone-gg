@@ -25,6 +25,9 @@ func _ready() -> void:
 		
 		if auto_spawn_on_connect:
 			spawn_player(multiplayer.get_unique_id())
+	elif not multiplayer.has_multiplayer_peer():
+		if auto_spawn_on_connect:
+			spawn_player(1)
 
 func _cache_spawn_points() -> void:
 	_spawn_points.clear()
@@ -102,6 +105,14 @@ func spawn_player(peer_id: int) -> Node:
 		"transform": spawn_transform
 	}
 	
+	if not multiplayer.has_multiplayer_peer():
+		var player = _custom_spawn(spawn_data)
+		if container:
+			container.add_child(player)
+		else:
+			add_child(player)
+		return player
+	
 	return spawn(spawn_data)
 
 func _custom_spawn(data: Variant) -> Node:
@@ -122,8 +133,11 @@ func respawn_player(peer_id: int) -> void:
 	if container and container.has_node(str(peer_id)):
 		var player = container.get_node(str(peer_id))
 		var spawn_point = get_next_spawn_point()
-		if spawn_point and player is Node3D:
-			player.global_transform = spawn_point.global_transform
+		var spawn_transform: Transform3D = spawn_point.global_transform if spawn_point else Transform3D.IDENTITY
+		if player.has_method("respawn"):
+			player.respawn(spawn_transform)
+		elif player is Node3D:
+			player.global_transform = spawn_transform
 			if player is CharacterBody3D:
 				player.velocity = Vector3.ZERO
 	else:

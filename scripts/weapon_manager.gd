@@ -153,11 +153,8 @@ func _perform_raycast(camera: Camera3D, weapon: Weapon) -> void:
 		var collider = result.collider
 		if collider and collider.has_method("take_damage"):
 			hit_target.emit(collider, weapon.damage)
-			if multiplayer.has_multiplayer_peer():
-				rpc_id(1, "server_apply_damage", collider.get_path(), weapon.damage)
-			else:
-				var attacker_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 0
-				collider.take_damage(weapon.damage, attacker_id)
+			var attacker_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 0
+			collider.take_damage(weapon.damage, attacker_id)
 
 func _spawn_visual_effects(weapon: Weapon, hit_point: Vector3) -> void:
 	if weapon.muzzle_flash_scene and weapon.muzzle_point:
