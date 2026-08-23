@@ -50,6 +50,10 @@ properties/6/replication_mode = 1
 [node name="Player" type="CharacterBody3D" unique_id=329179934 node_paths=PackedStringArray("camera_pivot", "spring_arm", "camera", "body_mesh", "eyes_node", "weapon_manager", "hud", "crosshair")]
 wall_min_slide_angle = 0.34906584
 script = ExtResource("1_player")
+jump_velocity = 10.0
+gravity = 20.0
+fall_gravity_multiplier = 1.2
+tps_distance = 3.0
 camera_pivot = NodePath("CameraPivot")
 spring_arm = NodePath("CameraPivot/SpringArm3D")
 camera = NodePath("CameraPivot/SpringArm3D/Camera3D")
@@ -81,7 +85,8 @@ shape = SubResource("CapsuleShape3D_u8vuu")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -0.5459351)
 
 [node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot" unique_id=2000000002]
-spring_length = 0.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.75, 0.5, 3)
+spring_length = 3.5
 margin = 0.1
 
 [node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D" unique_id=2000000003]

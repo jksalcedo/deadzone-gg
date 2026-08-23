@@ -10,11 +10,25 @@ enum CameraMode {
 }
 
 @export_group("Movement")
-@export var walk_speed: float = 10.0
-@export var sprint_speed: float = 15.0
-@export var jump_velocity: float = 10.0
-@export var acceleration: float = 12.0
-@export var deceleration: float = 10.0
+@export var walk_speed: float = 8.0
+@export var sprint_speed: float = 13.0
+@export var crouch_speed: float = 4.5
+@export var ground_accel: float = 20.0
+@export var ground_decel: float = 22.0
+@export var air_accel: float = 16.0
+@export var air_decel: float = 12.0
+
+@export_group("Jump & Gravity")
+@export var jump_velocity: float = 8.5
+@export var gravity: float = 24.0
+@export var fall_gravity_multiplier: float = 1.3
+@export var coyote_time: float = 0.12
+@export var jump_buffer_time: float = 0.1
+
+@export_group("Crouch")
+@export var crouch_height: float = 1.2
+@export var stand_height: float = 2.0
+@export var crouch_transition_speed: float = 10.0
 
 @export_group("Camera")
 @export var mouse_sensitivity: float = 0.0025
@@ -23,6 +37,22 @@ enum CameraMode {
 @export var tps_offset: Vector3 = Vector3(0.5, 0.5, 0.0)
 @export var min_pitch: float = -89.0
 @export var max_pitch: float = 89.0
+@export var base_fov: float = 80.0
+@export var sprint_fov: float = 85.0
+@export var fov_lerp_speed: float = 6.0
+
+@export_group("Head Bob")
+@export var bob_enabled: bool = true
+@export var bob_frequency: float = 2.2
+@export var bob_h_amplitude: float = 0.04
+@export var bob_v_amplitude: float = 0.025
+@export var sprint_bob_multiplier: float = 1.4
+
+@export_group("Landing & Sway")
+@export var landing_impact_strength: float = 0.06
+@export var landing_recovery_speed: float = 8.0
+@export var weapon_sway_amount: float = 0.003
+@export var weapon_sway_speed: float = 10.0
 
 @export_group("Health")
 @export var max_health: float = 100.0
@@ -39,7 +69,24 @@ var health: float = 100.0
 @export var crosshair: Crosshair
 
 var current_camera_mode: CameraMode = CameraMode.TPS
-var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
+
+# Movement state
+var _is_crouching: bool = false
+var _was_on_floor: bool = true
+var _coyote_timer: float = 0.0
+var _jump_buffer_timer: float = 0.0
+var _fall_velocity: float = 0.0
+
+# Camera state
+var _bob_timer: float = 0.0
+var _camera_pivot_base_y: float = 0.0
+var _landing_offset: float = 0.0
+var _weapon_holder_base_pos: Vector3 = Vector3.ZERO
+var _mouse_delta: Vector2 = Vector2.ZERO
+
+# Collision
+var _collision_shape: CollisionShape3D
+var _capsule_shape: CapsuleShape3D
 
 # Multiplayer sync variables
 @export var sync_position: Vector3 = Vector3.ZERO
@@ -70,8 +117,16 @@ func _ready() -> void:
 	if not crosshair and hud:
 		crosshair = hud.get_node_or_null("Crosshair")
 
+	_collision_shape = get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if _collision_shape:
+		_capsule_shape = _collision_shape.shape as CapsuleShape3D
+
+	if camera_pivot:
+		_camera_pivot_base_y = camera_pivot.position.y
+
 	if weapon_manager:
 		weapon_manager.recoil_requested.connect(_on_recoil_requested)
+		_weapon_holder_base_pos = weapon_manager.position
 
 	if hud and hud.has_method("initialize"):
 		hud.initialize(self, weapon_manager)
@@ -89,9 +144,10 @@ func _ready() -> void:
 
 	if camera:
 		camera.current = true
-	
+		camera.fov = base_fov
+
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	set_camera_mode(default_camera_mode)
+	set_camera_mode(default_camera_mode, true)
 
 func _is_local_authority() -> bool:
 	return not multiplayer.has_multiplayer_peer() or is_multiplayer_authority()
@@ -101,6 +157,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		_mouse_delta += event.relative
 		rotate_y(-event.relative.x * mouse_sensitivity)
 		if camera_pivot:
 			camera_pivot.rotate_x(-event.relative.y * mouse_sensitivity)
@@ -110,7 +167,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				deg_to_rad(max_pitch)
 			)
 
-	# Firing & Weapon cycling input
+	# Firing & Weapon cycling
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if Input.mouse_mode == Input.MOUSE_MODE_VISIBLE and event.pressed:
@@ -126,12 +183,19 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 				weapon_manager.cycle_weapon(1)
 
-	# Weapon selection numbers & Reload
 	if event is InputEventKey and event.pressed and not event.echo:
+		# Weapon selection
 		if event.keycode >= KEY_1 and event.keycode <= KEY_9 and weapon_manager:
 			weapon_manager.set_active_weapon(event.keycode - KEY_1)
 		elif (event.keycode == KEY_R or event.is_action_pressed("reload")) and weapon_manager:
 			weapon_manager.reload_active()
+		# Crouch toggle
+		elif event.keycode == KEY_C:
+			_toggle_crouch()
+
+	# Jump buffer
+	if event.is_action_pressed("jump") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE):
+		_jump_buffer_timer = jump_buffer_time
 
 	# Perspective toggle
 	if event.is_action_pressed("toggle_perspective") or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_V):
@@ -146,7 +210,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not _is_local_authority():
-		# Client interpolation for remote players
 		global_position = global_position.lerp(sync_position, delta * 15.0)
 		rotation.y = lerp_angle(rotation.y, sync_rotation_y, delta * 15.0)
 		if camera_pivot:
@@ -155,44 +218,97 @@ func _physics_process(delta: float) -> void:
 			weapon_manager.set_active_weapon(sync_weapon_index)
 		return
 
-	# Continuous automatic firing
 	if weapon_manager:
 		weapon_manager.process_firing(camera, crosshair)
 
-	# Gravity
-	if not is_on_floor():
-		velocity.y -= gravity * delta + 0.2
+	var on_floor = is_on_floor()
 
-	# Jump
-	var is_jumping: bool = Input.is_action_just_pressed("jump") or Input.is_key_pressed(KEY_SPACE)
-	if is_jumping and is_on_floor():
+	# --- Coyote time ---
+	if on_floor:
+		_coyote_timer = coyote_time
+	elif _was_on_floor and _coyote_timer > 0.0:
+		_coyote_timer -= delta
+	else:
+		_coyote_timer = 0.0
+
+	# --- Track fall velocity for landing impact ---
+	if not on_floor:
+		_fall_velocity = minf(_fall_velocity, velocity.y)
+
+	# --- Landing detection ---
+	if on_floor and not _was_on_floor:
+		var impact = absf(_fall_velocity)
+		if impact > 3.0:
+			var strength = clampf((impact - 3.0) / 12.0, 0.0, 1.0) * landing_impact_strength
+			_landing_offset = -strength
+		_fall_velocity = 0.0
+
+	# --- Gravity ---
+	if not on_floor:
+		var current_gravity = gravity * (fall_gravity_multiplier if velocity.y < 0.0 else 1.0)
+		velocity.y -= current_gravity * delta
+
+	# --- Jump (with buffer + coyote) ---
+	_jump_buffer_timer = maxf(0.0, _jump_buffer_timer - delta)
+	var can_jump = on_floor or _coyote_timer > 0.0
+	if _jump_buffer_timer > 0.0 and can_jump and not _is_crouching:
 		velocity.y = jump_velocity
+		_jump_buffer_timer = 0.0
+		_coyote_timer = 0.0
 
-	# Movement direction
+	# --- Movement ---
 	var input_dir: Vector2 = _get_movement_vector()
 	var direction: Vector3 = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-	
-	var is_sprinting: bool = Input.is_action_pressed("sprint") or Input.is_key_pressed(KEY_SHIFT)
-	var target_speed: float = sprint_speed if is_sprinting else walk_speed
+
+	var is_sprinting: bool = (Input.is_action_pressed("sprint") or Input.is_key_pressed(KEY_SHIFT)) and not _is_crouching
+	var target_speed: float
+	if _is_crouching:
+		target_speed = crouch_speed
+	elif is_sprinting:
+		target_speed = sprint_speed
+	else:
+		target_speed = walk_speed
+
+	var accel: float
+	var decel: float
+	if on_floor:
+		accel = ground_accel
+		decel = ground_decel
+	else:
+		accel = air_accel
+		decel = air_decel
 
 	if direction:
-		velocity.x = lerp(velocity.x, direction.x * target_speed, acceleration * delta)
-		velocity.z = lerp(velocity.z, direction.z * target_speed, acceleration * delta)
+		velocity.x = lerp(velocity.x, direction.x * target_speed, accel * delta)
+		velocity.z = lerp(velocity.z, direction.z * target_speed, accel * delta)
 		if crosshair:
-			crosshair.add_spread(0.1)
+			crosshair.add_spread(0.05 if not is_sprinting else 0.12)
 	else:
-		velocity.x = lerp(velocity.x, 0.0, deceleration * delta)
-		velocity.z = lerp(velocity.z, 0.0, deceleration * delta)
+		velocity.x = lerp(velocity.x, 0.0, decel * delta)
+		velocity.z = lerp(velocity.z, 0.0, decel * delta)
 
 	move_and_slide()
+	_was_on_floor = on_floor
 
-	# Update sync properties for MultiplayerSynchronizer
+	# --- Camera effects ---
+	var h_speed = Vector2(velocity.x, velocity.z).length()
+	_update_head_bob(delta, h_speed, is_sprinting, on_floor)
+	_update_landing_recovery(delta)
+	_update_fov(delta, is_sprinting, on_floor)
+	_update_weapon_sway(delta)
+
+	# --- Crouch interpolation ---
+	_update_crouch(delta)
+
+	# --- Sync ---
 	sync_position = global_position
 	sync_rotation_y = rotation.y
 	if weapon_manager:
 		sync_weapon_index = weapon_manager.active_weapon_index
 	if camera_pivot:
 		sync_pitch = camera_pivot.rotation.x
+
+	_mouse_delta = Vector2.ZERO
 
 func _get_movement_vector() -> Vector2:
 	var dir: Vector2 = Vector2.ZERO
@@ -205,6 +321,102 @@ func _get_movement_vector() -> Vector2:
 	if Input.is_action_pressed("move_back") or Input.is_key_pressed(KEY_S):
 		dir.y += 1.0
 	return dir.normalized()
+
+# --- Crouch ---
+
+func _toggle_crouch() -> void:
+	if _is_crouching:
+		# Check headroom before standing
+		if _has_headroom():
+			_is_crouching = false
+	else:
+		_is_crouching = true
+
+func _has_headroom() -> bool:
+	if not _collision_shape:
+		return true
+	var space = get_world_3d().direct_space_state
+	var params = PhysicsRayQueryParameters3D.create(
+		global_position + Vector3(0, crouch_height * 0.5, 0),
+		global_position + Vector3(0, stand_height, 0)
+	)
+	params.exclude = [get_rid()]
+	return not space.intersect_ray(params)
+
+func _update_crouch(delta: float) -> void:
+	if not _capsule_shape or not _collision_shape or not camera_pivot:
+		return
+
+	var target_height = crouch_height if _is_crouching else stand_height
+	var current_height = _capsule_shape.height
+
+	_capsule_shape.height = lerpf(current_height, target_height, crouch_transition_speed * delta)
+	_collision_shape.position.y = _capsule_shape.height * 0.5
+
+	var target_cam_y = (target_height - 0.5) if not _is_crouching else (target_height - 0.3)
+	_camera_pivot_base_y = lerpf(_camera_pivot_base_y, target_cam_y, crouch_transition_speed * delta)
+
+	if body_mesh:
+		body_mesh.position.y = _capsule_shape.height * 0.5
+
+# --- Head Bob ---
+
+func _update_head_bob(delta: float, speed: float, sprinting: bool, on_floor: bool) -> void:
+	if not camera_pivot or not bob_enabled:
+		return
+
+	var target_y = _camera_pivot_base_y + _landing_offset
+
+	if on_floor and speed > 0.5:
+		var freq = bob_frequency
+		var v_amp = bob_v_amplitude
+		var h_amp = bob_h_amplitude
+		if sprinting:
+			freq *= sprint_bob_multiplier
+			v_amp *= sprint_bob_multiplier
+			h_amp *= sprint_bob_multiplier
+
+		var intensity = clampf(speed / walk_speed, 0.0, 1.5)
+		_bob_timer += delta * freq * TAU
+		target_y += sin(_bob_timer) * v_amp * intensity
+		var bob_x = cos(_bob_timer * 0.5) * h_amp * intensity
+		camera_pivot.position.x = lerpf(camera_pivot.position.x, bob_x, 12.0 * delta)
+	else:
+		_bob_timer = 0.0
+		camera_pivot.position.x = lerpf(camera_pivot.position.x, 0.0, 8.0 * delta)
+
+	camera_pivot.position.y = lerpf(camera_pivot.position.y, target_y, 12.0 * delta)
+
+# --- Landing ---
+
+func _update_landing_recovery(delta: float) -> void:
+	if _landing_offset < 0.0:
+		_landing_offset = lerpf(_landing_offset, 0.0, landing_recovery_speed * delta)
+		if absf(_landing_offset) < 0.001:
+			_landing_offset = 0.0
+
+# --- FOV ---
+
+func _update_fov(delta: float, sprinting: bool, on_floor: bool) -> void:
+	if not camera:
+		return
+	var target_fov = sprint_fov if (sprinting and on_floor) else base_fov
+	camera.fov = lerpf(camera.fov, target_fov, fov_lerp_speed * delta)
+
+# --- Weapon Sway ---
+
+func _update_weapon_sway(delta: float) -> void:
+	if not weapon_manager:
+		return
+	var sway_x = -_mouse_delta.x * weapon_sway_amount
+	var sway_y = -_mouse_delta.y * weapon_sway_amount
+	sway_x = clampf(sway_x, -0.03, 0.03)
+	sway_y = clampf(sway_y, -0.03, 0.03)
+
+	var target = _weapon_holder_base_pos + Vector3(sway_x, sway_y, 0.0)
+	weapon_manager.position = weapon_manager.position.lerp(target, weapon_sway_speed * delta)
+
+# --- Recoil / Damage / Death ---
 
 func _on_recoil_requested(pitch_kick: float) -> void:
 	if camera_pivot:
@@ -229,16 +441,28 @@ func _on_death(attacker_id: int = 0) -> void:
 		health = max_health
 		health_changed.emit(health, max_health)
 
+# --- Camera Mode ---
+
 func toggle_camera_mode() -> void:
 	if current_camera_mode == CameraMode.FPS:
 		set_camera_mode(CameraMode.TPS)
 	else:
 		set_camera_mode(CameraMode.FPS)
 
-func set_camera_mode(mode: CameraMode) -> void:
+func set_camera_mode(mode: CameraMode, instant: bool = false) -> void:
 	current_camera_mode = mode
 	camera_mode_changed.emit(current_camera_mode)
 	if not spring_arm:
+		return
+
+	if instant:
+		match current_camera_mode:
+			CameraMode.FPS:
+				spring_arm.spring_length = 0.0
+				spring_arm.position = Vector3.ZERO
+			CameraMode.TPS:
+				spring_arm.spring_length = tps_distance
+				spring_arm.position = tps_offset
 		return
 
 	var tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
