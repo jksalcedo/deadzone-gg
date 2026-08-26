@@ -16,6 +16,7 @@ signal hit_target(collider: Object, damage: float)
 @export var is_firing_held: bool = false
 
 var _player: CharacterBody3D
+var _muzzle_marker: Marker3D
 
 func _ready() -> void:
 	_player = _find_parent_character()
@@ -24,6 +25,7 @@ func _ready() -> void:
 		_connect_weapon_signals(w)
 	if not weapons.is_empty():
 		set_active_weapon(0)
+	_muzzle_marker = get_node_or_null("BulletPoint") as Marker3D
 
 func _find_parent_character() -> CharacterBody3D:
 	var current: Node = get_parent()
@@ -157,19 +159,32 @@ func _perform_raycast(camera: Camera3D, weapon: Weapon) -> void:
 			collider.take_damage(weapon.damage, attacker_id)
 
 func _spawn_visual_effects(weapon: Weapon, hit_point: Vector3) -> void:
-	if weapon.muzzle_flash_scene and weapon.muzzle_point:
-		var flash = weapon.muzzle_flash_scene.instantiate()
-		weapon.muzzle_point.add_child(flash)
+	var muzzle: Marker3D = _muzzle_marker
+	if not muzzle and weapon and weapon.muzzle_point:
+		muzzle = weapon.muzzle_point
 
-	if weapon.bullet_trail_scene:
+	var start_pos: Vector3 = muzzle.global_position if muzzle else global_position
+
+	if weapon and weapon.muzzle_flash_scene:
+		var flash = weapon.muzzle_flash_scene.instantiate()
+		if muzzle:
+			muzzle.add_child(flash)
+		else:
+			add_child(flash)
+
+	if weapon and weapon.bullet_trail_scene:
 		var trail = weapon.bullet_trail_scene.instantiate()
-		var start_pos: Vector3 = weapon.muzzle_point.global_position if weapon.muzzle_point else global_position
 		get_tree().root.add_child(trail)
-		trail.global_position = start_pos
-		if start_pos.distance_squared_to(hit_point) > 0.001:
-			trail.look_at(hit_point, Vector3.UP)
-		if "max_distance" in trail:
-			trail.max_distance = start_pos.distance_to(hit_point)
+		if trail.has_method("init"):
+			
+			
+			trail.init(start_pos, hit_point)
+		else:
+			trail.global_position = start_pos
+			if start_pos.distance_squared_to(hit_point) > 0.001:
+				trail.look_at(hit_point, Vector3.UP)
+			if "max_distance" in trail:
+				trail.max_distance = start_pos.distance_to(hit_point)
 
 @rpc("any_peer", "call_local", "reliable")
 func server_apply_damage(target_path: NodePath, amount: float) -> void:

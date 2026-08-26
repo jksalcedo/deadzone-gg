@@ -36,7 +36,11 @@ func _ready() -> void:
 	current_ammo = mag_capacity
 	reserve_ammo = max_reserve_ammo
 	if not muzzle_point:
-		muzzle_point = get_node_or_null("Muzzle")
+		muzzle_point = get_node_or_null("Muzzle") as Marker3D
+		if not muzzle_point:
+			muzzle_point = get_node_or_null("Marker3D") as Marker3D
+		if not muzzle_point and get_parent():
+			muzzle_point = get_parent().get_node_or_null("Marker3D") as Marker3D
 
 func can_shoot() -> bool:
 	return can_fire and not is_reloading and current_ammo > 0

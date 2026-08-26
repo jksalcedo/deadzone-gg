@@ -95,9 +95,10 @@ margin = 0.1
 [node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D" unique_id=2000000003]
 fov = 80.0
 
-[node name="WeaponHolder" type="Node3D" parent="CameraPivot" unique_id=984319985]
+[node name="WeaponHolder" type="Node3D" parent="CameraPivot" unique_id=984319985 node_paths=PackedStringArray("weapons")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34598958, -0.266141, -0.2134969)
 script = ExtResource("6_weapon_manager")
+weapons = [NodePath("DR-H"), NodePath("Pistol")]
 
 [node name="DR-H" parent="CameraPivot/WeaponHolder" unique_id=435542855 instance=ExtResource("2_g2els")]
 

@@ -2,25 +2,43 @@
 
 [ext_resource type="Script" uid="uid://d3bcbhu2xfm0v" path="res://scripts/bullet_trail.gd" id="1_trail"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trail"]
-emission_enabled = true
-emission = Color(0.94470817, 0.74184126, 3.080368e-06, 1)
-emission_energy_multiplier = 16.0
-refraction_enabled = true
-refraction_scale = 1.0
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_trail"]
+direction = Vector3(0, 0, -1)
+spread = 0.0
+initial_velocity_min = 300.0
+initial_velocity_max = 300.0
+gravity = Vector3(0, 0, 0)
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_trail"]
-material = SubResource("StandardMaterial3D_trail")
-top_radius = 0.015
-bottom_radius = 0.015
-height = 0.5
-radial_segments = 8
+[sub_resource type="Curve" id="Curve_trail_width"]
+_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), -2.0, 0.0, 0, 0]
+point_count = 2
 
-[node name="BulletTrail" type="Node3D" unique_id=1710269152 node_paths=PackedStringArray("_trail_mesh")]
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trail_mat"]
+cull_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(1, 0.9, 0.4, 1)
+use_particle_trails = true
+
+[sub_resource type="TubeTrailMesh" id="TubeTrailMesh_trail"]
+material = SubResource("StandardMaterial3D_trail_mat")
+radius = 0.018
+radial_steps = 4
+sections = 6
+section_length = 0.1
+curve = SubResource("Curve_trail_width")
+
+[node name="BulletTrail" type="Node3D" unique_id=1180448214 node_paths=PackedStringArray("gpu_particles")]
 script = ExtResource("1_trail")
-_trail_mesh = NodePath("MeshInstance3D")
-_bullet_trail_speed = 120.0
+gpu_particles = NodePath("GPUParticles3D")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=155078435]
-transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
-mesh = SubResource("CylinderMesh_trail")
+[node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=210386573]
+emitting = false
+amount = 1
+lifetime = 0.09999999999999999
+one_shot = true
+explosiveness = 1.0
+trail_enabled = true
+trail_lifetime = 0.15
+process_material = SubResource("ParticleProcessMaterial_trail")
+draw_pass_1 = SubResource("TubeTrailMesh_trail")

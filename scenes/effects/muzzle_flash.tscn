@@ -1,28 +1,25 @@
 [gd_scene format=3 uid="uid://t15arbne6ivv"]
 
 [ext_resource type="Script" uid="uid://b0fduvc1yjhf2" path="res://scripts/muzzle_flash.gd" id="1_flash"]
+[ext_resource type="Texture2D" uid="uid://d3siss4lg872m" path="res://textures/muzzle_flash_fire.png" id="2_tmmjm"]
 
-[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_flash"]
-direction = Vector3(0, 0, -1)
-spread = 25.0
-initial_velocity_min = 3.0
-initial_velocity_max = 6.0
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_ulrbe"]
 gravity = Vector3(0, 0, 0)
-scale_min = 0.5
-scale_max = 1.2
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_flash"]
-albedo_color = Color(1, 0.9, 0.4, 1)
-emission_enabled = true
-emission = Color(1, 0.8, 0.2, 1)
-emission_energy_multiplier = 6.0
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_er7ar"]
+transparency = 1
+blend_mode = 1
+cull_mode = 2
+no_depth_test = true
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("2_tmmjm")
+proximity_fade_enabled = true
+proximity_fade_distance = 2.0
 
-[sub_resource type="SphereMesh" id="SphereMesh_flash"]
-material = SubResource("StandardMaterial3D_flash")
-radius = 0.06
-height = 0.12
-radial_segments = 8
-rings = 4
+[sub_resource type="QuadMesh" id="QuadMesh_tgism"]
+material = SubResource("StandardMaterial3D_er7ar")
+size = Vector2(0.3, 0.3)
 
 [node name="MuzzleFlash" type="Node3D" unique_id=1733409332 node_paths=PackedStringArray("_particles")]
 script = ExtResource("1_flash")
@@ -31,9 +28,17 @@ _life_time = 0.15
 
 [node name="GPUParticles3D" type="GPUParticles3D" parent="." unique_id=222685042]
 emitting = false
-amount = 6
-lifetime = 0.1
+amount = 5
+lifetime = 0.02
 one_shot = true
-speed_scale = 5.0
-process_material = SubResource("ParticleProcessMaterial_flash")
-draw_pass_1 = SubResource("SphereMesh_flash")
+explosiveness = 0.22
+randomness = 0.6
+local_coords = true
+process_material = SubResource("ParticleProcessMaterial_ulrbe")
+draw_pass_1 = SubResource("QuadMesh_tgism")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="GPUParticles3D" unique_id=1605722833]
+light_color = Color(0.9966586, 0.5450694, 0, 1)
+shadow_enabled = true
+omni_range = 1.0
+omni_shadow_mode = 0
