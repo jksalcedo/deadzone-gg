@@ -2,9 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/weapon_spawner.gd" id="1_spawner"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_pickup.tscn" id="2_pickup"]
+[ext_resource type="PackedScene" path="res://scenes/ammo_pickup.tscn" id="3_ammo"]
 
 [node name="WeaponSpawner" type="Node"]
 script = ExtResource("1_spawner")
 pickup_scene = ExtResource("2_pickup")
+ammo_scene = ExtResource("3_ammo")
+ammo_offset = Vector3(0.8, 0.0, 0.0)
 respawn_delay = 30.0
 max_spawns = 0

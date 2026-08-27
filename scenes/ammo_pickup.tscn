@@ -1,0 +1,46 @@
+[gd_scene format=3 uid="uid://va56ewetka24"]
+
+[ext_resource type="Script" uid="uid://cyx8t3gfmiwub" path="res://scripts/ammo_pickup.gd" id="1_ammo"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_ammo"]
+height = 1.0
+radius = 0.7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_crate"]
+shading_mode = 0
+albedo_color = Color(0.22835752, 0.30165023, 0.024950258, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+material = SubResource("StandardMaterial3D_crate")
+size = Vector3(0.5, 0.35534668, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stripe"]
+shading_mode = 0
+albedo_color = Color(0.9, 0.7, 0.05, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_stripe"]
+material = SubResource("StandardMaterial3D_stripe")
+size = Vector3(0.52, 0.08, 0.52)
+
+[node name="AmmoPickup" type="Area3D" unique_id=1822457285]
+collision_layer = 0
+script = ExtResource("1_ammo")
+display_label = "Ammo Box"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=377874120]
+shape = SubResource("CylinderShape3D_ammo")
+
+[node name="Crate" type="MeshInstance3D" parent="." unique_id=245950624]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.21176147, 0)
+mesh = SubResource("BoxMesh_crate")
+
+[node name="Stripe" type="MeshInstance3D" parent="." unique_id=194968240]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.28408813, 0)
+mesh = SubResource("BoxMesh_stripe")
+
+[node name="Label3D" type="Label3D" parent="." unique_id=1705076379]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+billboard = 1
+modulate = Color(0.3, 1, 0.4, 0.9)
+text = "[ E ]  Ammo Box"
+font_size = 48
