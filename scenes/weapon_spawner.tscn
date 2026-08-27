@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/weapon_spawner.gd" id="1_spawner"]
+[ext_resource type="PackedScene" path="res://scenes/weapon_pickup.tscn" id="2_pickup"]
+
+[node name="WeaponSpawner" type="Node"]
+script = ExtResource("1_spawner")
+pickup_scene = ExtResource("2_pickup")
+respawn_delay = 30.0
+max_spawns = 0

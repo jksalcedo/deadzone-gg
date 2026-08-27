@@ -5,45 +5,55 @@ signal picked_up(weapon_name: String)
 
 @export var weapon_scene: PackedScene
 @export var weapon_name_label: String = "Weapon"
-## If true, the pickup disappears after the first player picks it up.
-## If false, each player can pick it up independently (respawning).
 @export var single_use: bool = true
 
-var _picked_up_by: Array[int] = []
+@onready var _label: Label3D = get_node_or_null("Label3D")
+
+var _nearby_players: Array[Node] = []
+var _weapon_visual: Node3D = null
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+	_spawn_visual()
+	if _label:
+		_label.text = "[ E ]  %s" % weapon_name_label
+		_label.visible = false
+
+func _spawn_visual() -> void:
+	if not weapon_scene:
+		return
+	_weapon_visual = weapon_scene.instantiate() as Node3D
+	if not _weapon_visual:
+		return
+	_weapon_visual.set_script(null)
+	add_child(_weapon_visual)
+
+func _process(delta: float) -> void:
+	if _weapon_visual:
+		_weapon_visual.rotate_y(delta * 1.2)
+
+	if _label:
+		_label.visible = not _nearby_players.is_empty()
+
+	if Input.is_action_just_pressed("interact"):
+		for player in _nearby_players:
+			if _is_local(player):
+				_try_pickup(player)
+				break
 
 func _on_body_entered(body: Node3D) -> void:
-	if not body.has_method("_is_player"):
-		return
-	var peer_id := _get_peer_id(body)
-	if peer_id in _picked_up_by:
-		return
+	if body.is_in_group("players"):
+		_nearby_players.append(body)
 
-	if multiplayer.is_server():
-		_grant_weapon.rpc(peer_id)
+func _on_body_exited(body: Node3D) -> void:
+	_nearby_players.erase(body)
 
-func _get_peer_id(player: Node) -> int:
-	if player.has_meta("peer_id"):
-		return player.get_meta("peer_id")
-	if player.get("player_id") != null:
-		return player.player_id
-	return 1
+func _try_pickup(player: Node) -> void:
+	var peer_id: int = player.get("player_id") if player.get("player_id") != null else 1
+	_do_grant(player, peer_id)
 
-@rpc("authority", "call_local", "reliable")
-func _grant_weapon(peer_id: int) -> void:
-	if not multiplayer.get_unique_id() == peer_id and not multiplayer.is_server():
-		return
-
-	var local_id := multiplayer.get_unique_id()
-	if local_id != peer_id:
-		return
-
-	var player := _find_local_player()
-	if not player:
-		return
-
+func _do_grant(player: Node, peer_id: int) -> void:
 	var weapon_manager := _find_weapon_manager(player)
 	if not weapon_manager or not weapon_scene:
 		return
@@ -51,28 +61,27 @@ func _grant_weapon(peer_id: int) -> void:
 	weapon_manager.pickup_weapon(weapon_scene)
 	picked_up.emit(weapon_name_label)
 
-	_picked_up_by.append(peer_id)
 	if single_use:
 		queue_free()
 
-func _find_local_player() -> Node:
-	for child in get_tree().get_nodes_in_group("players"):
-		if child.get("player_id") == multiplayer.get_unique_id():
-			return child
-	return null
+func _is_local(player: Node) -> bool:
+	if not multiplayer.has_multiplayer_peer():
+		return true
+	var pid: int = player.get("player_id") if player.get("player_id") != null else 1
+	return pid == multiplayer.get_unique_id()
 
 func _find_weapon_manager(player: Node) -> WeaponManager:
 	for child in player.get_children():
-		var r := _search_weapon_manager(child)
+		var r := _search_wm(child)
 		if r:
 			return r
 	return null
 
-func _search_weapon_manager(node: Node) -> WeaponManager:
+func _search_wm(node: Node) -> WeaponManager:
 	if node is WeaponManager:
 		return node
 	for child in node.get_children():
-		var r := _search_weapon_manager(child)
+		var r := _search_wm(child)
 		if r:
 			return r
 	return null
