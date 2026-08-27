@@ -10,6 +10,7 @@ signal weapon_reload_canceled(weapon: Weapon)
 signal ammo_changed(current: int, reserve: int)
 signal recoil_requested(pitch_kick: float)
 signal hit_target(collider: Object, damage: float)
+signal weapon_picked_up(weapon: Weapon)
 
 @export var weapons: Array[Weapon] = []
 @export var active_weapon_index: int = 0
@@ -108,9 +109,9 @@ func pickup_weapon(scene: PackedScene) -> void:
 	add_child(instance)
 	weapons.append(instance)
 	_connect_weapon_signals(instance)
-	# Hide all then switch to the new weapon
 	set_active_weapon(weapons.size() - 1)
 	weapon_switched.emit(instance)
+	weapon_picked_up.emit(instance)
 
 func reload_active() -> void:
 	var active_w = get_active_weapon()

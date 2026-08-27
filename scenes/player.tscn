@@ -970,6 +970,7 @@ tracks/7/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
 [sub_resource type="Animation" id="Animation_5vc46"]
 resource_name = "holding-right"
 length = 0.16666667
+loop_mode = 1
 tracks/0/type = "rotation_3d"
 tracks/0/imported = true
 tracks/0/enabled = true
@@ -1090,6 +1091,7 @@ tracks/7/keys = PackedFloat32Array(0, 1, 0, 0, 0, 1)
 [sub_resource type="Animation" id="Animation_q1k56"]
 resource_name = "idle"
 length = 1.3333334
+loop_mode = 1
 tracks/0/type = "rotation_3d"
 tracks/0/imported = true
 tracks/0/enabled = true
@@ -1511,6 +1513,7 @@ tracks/7/keys = PackedFloat32Array(0, 1, 0, 0, 0, -1)
 [sub_resource type="Animation" id="Animation_ek2e8"]
 resource_name = "walk"
 length = 0.6666667
+loop_mode = 1
 tracks/0/type = "position_3d"
 tracks/0/imported = true
 tracks/0/enabled = true
@@ -1914,6 +1917,8 @@ body_mesh = NodePath("Body")
 eyes_node = NodePath("Eyes")
 weapon_manager = NodePath("CameraPivot/WeaponHolder")
 hud = NodePath("HUD")
+right_hand_attach = NodePath("character-a2/character-a/root/torso/arm-right/RightHandAttach")
+anim_player = NodePath("character-a2/AnimationPlayer")
 bomb_scene = ExtResource("2_tuyoq")
 bomb_spawn_marker = NodePath("CameraPivot/WeaponHolder/Marker3D")
 crosshair = NodePath("HUD/Crosshair")
@@ -1952,9 +1957,7 @@ fov = 80.0
 [node name="WeaponHolder" type="Node3D" parent="CameraPivot" unique_id=984319985 node_paths=PackedStringArray("weapons")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.34598958, -0.266141, -0.2134969)
 script = ExtResource("6_weapon_manager")
-weapons = [NodePath("Melee")]
-
-[node name="Melee" parent="CameraPivot/WeaponHolder" unique_id=111222333 instance=ExtResource("4_melee")]
+weapons = [NodePath("../../character-a2/character-a/root/torso/arm-right/RightHandAttach/Melee")]
 
 [node name="Marker3D" type="Marker3D" parent="CameraPivot/WeaponHolder" unique_id=1900290565]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.22719228)
@@ -1990,6 +1993,12 @@ mesh = SubResource("ArrayMesh_gexgc")
 [node name="arm-right" type="MeshInstance3D" parent="character-a2/character-a/root/torso" unique_id=203265694]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.4000001, 1.1, -0.099999994)
 mesh = SubResource("ArrayMesh_rbsad")
+
+[node name="RightHandAttach" type="Marker3D" parent="character-a2/character-a/root/torso/arm-right" unique_id=444555666]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.99999994, 0, 0, 0, 0.99999994, -0.18627131, -0.99999994, -1.4901161e-08)
+
+[node name="Melee" parent="character-a2/character-a/root/torso/arm-right/RightHandAttach" unique_id=111222333 instance=ExtResource("4_melee")]
+transform = Transform3D(-1.3793103, 0, 1.2058312e-07, 0, 1.3793103, 0, -1.2058312e-07, 0, -1.3793103, 0, 0, 0)
 
 [node name="head" type="MeshInstance3D" parent="character-a2/character-a/root/torso" unique_id=1748982418]
 transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 1.2, 0)

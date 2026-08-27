@@ -67,6 +67,8 @@ var health: float = 100.0
 @export var eyes_node: Node3D
 @export var weapon_manager: WeaponManager
 @export var hud: CanvasLayer
+@export var right_hand_attach: Marker3D
+@export var anim_player: AnimationPlayer
 
 @export_group("Bomb")
 @export var bomb_scene: PackedScene
@@ -146,12 +148,22 @@ func _ready() -> void:
 	if _collision_shape:
 		_capsule_shape = _collision_shape.shape as CapsuleShape3D
 
+	if not anim_player:
+		anim_player = get_node_or_null("character-a2/AnimationPlayer") as AnimationPlayer
+
 	if camera_pivot:
 		_camera_pivot_base_y = camera_pivot.position.y
 
 	if weapon_manager:
 		weapon_manager.recoil_requested.connect(_on_recoil_requested)
+		weapon_manager.weapon_switched.connect(_on_weapon_switched_melee)
+		weapon_manager.weapon_fired.connect(_on_weapon_fired_anim)
+		weapon_manager.weapon_picked_up.connect(_on_weapon_picked_up_anim)
 		_weapon_holder_base_pos = weapon_manager.position
+		_sync_melee_visual(weapon_manager.get_active_weapon())
+
+	if anim_player:
+		anim_player.animation_finished.connect(_on_anim_finished)
 
 	if hud and hud.has_method("initialize"):
 		hud.initialize(self, weapon_manager)
@@ -176,6 +188,64 @@ func _ready() -> void:
 
 func _is_local_authority() -> bool:
 	return not multiplayer.has_multiplayer_peer() or is_multiplayer_authority()
+
+func _on_weapon_switched_melee(weapon: Weapon) -> void:
+	_current_anim = ""  # force re-evaluate pose on next frame
+	_sync_melee_visual(weapon)
+
+func _sync_melee_visual(weapon: Weapon) -> void:
+	if not right_hand_attach or not weapon_manager:
+		return
+	var is_melee := weapon is Melee
+	for w in weapon_manager.weapons:
+		if w is Melee:
+			w.visible = false
+	right_hand_attach.visible = is_melee
+
+var _current_anim: String = ""
+var _is_oneshot: bool = false
+
+func _play_anim(name: String) -> void:
+	if not anim_player or _current_anim == name:
+		return
+	_current_anim = name
+	anim_player.play(name)
+
+func _play_oneshot(name: String) -> void:
+	if not anim_player:
+		return
+	_is_oneshot = true
+	_current_anim = name
+	anim_player.play(name)
+
+func _on_anim_finished(anim_name: String) -> void:
+	if _is_oneshot and anim_name == _current_anim:
+		_is_oneshot = false
+		_current_anim = ""  # let _update_animation pick the right base pose next frame
+
+func _on_weapon_fired_anim(weapon: Weapon) -> void:
+	if weapon is Melee:
+		_play_oneshot("attack-melee-right")
+	else:
+		_play_oneshot("holding-both-shoot")
+
+func _on_weapon_picked_up_anim(_weapon: Weapon) -> void:
+	_play_oneshot("pick-up")
+
+func _update_animation(direction: Vector3, sprinting: bool, on_floor: bool) -> void:
+	if not anim_player or _is_oneshot:
+		return
+
+	var active_w := weapon_manager.get_active_weapon() if weapon_manager else null
+	var is_melee := active_w is Melee
+	var moving := direction.length_squared() > 0.01 and on_floor
+
+	if moving:
+		_play_anim("sprint" if sprinting else "walk")
+	elif is_melee:
+		_play_anim("idle")
+	else:
+		_play_anim("holding-both")
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_local_authority():
@@ -370,6 +440,9 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	_was_on_floor = on_floor
+
+	# --- Animations ---
+	_update_animation(direction, is_sprinting, on_floor)
 
 	# --- Camera effects ---
 	var h_speed = Vector2(velocity.x, velocity.z).length()
