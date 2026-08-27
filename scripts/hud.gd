@@ -183,16 +183,28 @@ func _on_weapon_switched(weapon: Weapon) -> void:
 	if _reload_tween:
 		_reload_tween.kill()
 
-	_on_ammo_changed(weapon.current_ammo, weapon.reserve_ammo)
+	var is_melee := weapon is Melee or weapon.mag_capacity == 0
+	if current_ammo_label:
+		current_ammo_label.visible = not is_melee
+	if reserve_ammo_label:
+		reserve_ammo_label.visible = not is_melee
+	if low_ammo_label:
+		low_ammo_label.visible = false
+
+	if not is_melee:
+		_on_ammo_changed(weapon.current_ammo, weapon.reserve_ammo)
 
 func _on_ammo_changed(current: int, reserve: int) -> void:
+	var active_w := _weapon_manager.get_active_weapon() if _weapon_manager else null
+	if active_w and (active_w is Melee or active_w.mag_capacity == 0):
+		return
+
 	if current_ammo_label:
 		current_ammo_label.text = str(current)
 	if reserve_ammo_label:
 		reserve_ammo_label.text = str(reserve)
 
-	var active_w = _weapon_manager.get_active_weapon() if _weapon_manager else null
-	var max_mag = active_w.mag_capacity if active_w else 30
+	var max_mag := active_w.mag_capacity if active_w else 30
 
 	if low_ammo_label:
 		if current == 0 and reserve > 0:

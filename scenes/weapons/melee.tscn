@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://c6megvd42dstk"]
+
+[ext_resource type="Script" uid="uid://hrx362viblpr" path="res://scripts/melee.gd" id="1_melee"]
+[ext_resource type="PackedScene" uid="uid://cx2nbu0cxmr41" path="res://assets/models/game_ready_sci-fi_low-poly_katana.glb" id="2_5yc8j"]
+
+[node name="Melee" type="Node3D" unique_id=515202197]
+script = ExtResource("1_melee")
+weapon_name = "Fists"
+damage = 40.0
+fire_rate = 0.6
+is_automatic = false
+mag_capacity = 0
+max_reserve_ammo = 0
+max_range = 2.2
+spread = 0.0
+recoil_kick = 0.0
+
+[node name="Sketchfab_Scene" parent="." unique_id=378154104 instance=ExtResource("2_5yc8j")]
+transform = Transform3D(-1.0927847e-08, -0.25, -1.0927847e-08, 0, -1.0927847e-08, 0.25, -0.25, 1.0927847e-08, 4.7767137e-16, 0, 0, 0)

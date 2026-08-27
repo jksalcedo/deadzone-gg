@@ -105,7 +105,11 @@ var _capsule_shape: CapsuleShape3D
 @export var sync_pitch: float = 0.0
 @export var sync_weapon_index: int = 0
 
+var player_id: int = 1
+
 func _ready() -> void:
+	player_id = get_multiplayer_authority() if multiplayer.has_multiplayer_peer() else 1
+	add_to_group("players")
 	health = max_health
 	_bombs_remaining = bomb_count
 	bomb_count_changed.emit(_bombs_remaining, bomb_count)

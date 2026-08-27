@@ -99,6 +99,19 @@ func cycle_weapon(step: int) -> void:
 	var next_idx = posmod(active_weapon_index + step, weapons.size())
 	set_active_weapon(next_idx)
 
+func pickup_weapon(scene: PackedScene) -> void:
+	if not scene:
+		return
+	var instance := scene.instantiate() as Weapon
+	if not instance:
+		return
+	add_child(instance)
+	weapons.append(instance)
+	_connect_weapon_signals(instance)
+	# Hide all then switch to the new weapon
+	set_active_weapon(weapons.size() - 1)
+	weapon_switched.emit(instance)
+
 func reload_active() -> void:
 	var active_w = get_active_weapon()
 	if active_w:
